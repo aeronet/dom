@@ -1,16 +1,14 @@
 <?php
 
 // Include the library
-include('dom.php');
- include('node.php');
-
-
+include("imdb/imdb.php");
+include('scrape/dom.php');
+include('scrape/node.php');
 
 
 function httpCall($url='',$referer='',$post_call=FALSE,$postdata='',$include_header=FALSE,$arr_curl_option=array()){
 
 		$arr_result=array();
-       // $cookie_file = __FILE__ . "image_grabber.cookie";
         $ch=curl_init();
         if($include_header!==FALSE)
             curl_setopt($ch,CURLOPT_HEADER,TRUE);
@@ -24,8 +22,6 @@ function httpCall($url='',$referer='',$post_call=FALSE,$postdata='',$include_hea
         curl_setopt($ch,CURLOPT_UNRESTRICTED_AUTH,1);
         curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,60);
         curl_setopt($ch,CURLOPT_TIMEOUT,60);
-        //curl_setopt($ch,CURLOPT_COOKIEFILE,$cookie_file);
-        //curl_setopt($ch,CURLOPT_COOKIEJAR,$cookie_file);
         curl_setopt($ch,CURLOPT_ENCODING,"");
         if($post_call!==FALSE){
             curl_setopt($ch,CURLOPT_POST,1);
@@ -136,32 +132,50 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
         return $dom;
     }
 
+    function download_content($url,$save_path,$file_name) {
 
-$base_url = 'http://www.imdb.com';
-  $referer='';
- $url=$base_url.'/video/imdb/vi3225003545';
+        $parse_url      = parse_url($url) ;
+        $path_info      = pathinfo($parse_url['path']) ;
+        $file_extension = $path_info['extension'] ;
+        $file           = "$file_name.$file_extension" ;
+                          file_put_contents("$save_path/$file" , fopen($url, 'r'));
 
-        $arr_http_call_result=httpCall($url,$referer,FALSE,'',TRUE);
-        $arr_http_call_result=handle302Redirect($arr_http_call_result,$base_url);
-       $arr_http_call_result=handleMetaRedirect($arr_http_call_result,$base_url);
-
- if(!empty($arr_http_call_result['response'])){
-echo '<pre>';
-            $contents = str_get_html_my($arr_http_call_result['response']);
-$d=$contents->find('body');
-
-$filename ='data.txt';
-file_put_contents($filename,$d);
-}
-
-//////////////////
+    }
 
 
-$data       = file_get_contents('data.txt');
-$after      = substr($data, strpos($data, "push(") +5); 
-$explode    = explode("</script>", $after);
-$jsondata   = str_replace(");","",$explode[0]);
-$obj        = json_decode($jsondata, true);
+
+
+
+if(isset($_GET['movie']) and !empty($_GET['movie'])) {
+
+ini_set('max_execution_time', 300); //300 seconds = 5 minutes
+
+$i          = new Imdb();
+$movieName  = utf8_decode(urldecode($_GET['movie']));
+$mArr       = array_change_key_case($i->getMovieInfo($movieName), CASE_UPPER);
+// echo '<pre>';
+// print_r($mArr);
+            $titleVideo             = str_replace('#x26;', '' ,$mArr['TITLE']);
+            $urlVideo               = $mArr['VIDEOS'][0];
+            $posterVideo            = $mArr['POSTER_FULL'];
+            $base_url               = 'http://www.imdb.com';
+            $referer                = '';
+            $arr_http_call_result   = httpCall($urlVideo,$referer,FALSE,'',TRUE);
+            $arr_http_call_result   = handle302Redirect($arr_http_call_result,$base_url);
+            $arr_http_call_result   = handleMetaRedirect($arr_http_call_result,$base_url);
+
+            if(!empty($arr_http_call_result['response'])){
+                    $contents       = str_get_html_my($arr_http_call_result['response']);
+                    $d              = $contents->find('body');
+                    $filename       = "$titleVideo.txt";
+                                      file_put_contents($filename,$d);
+            }
+
+            $data                    = file_get_contents("$titleVideo.txt");
+            $after                   = substr($data, strpos($data, "push(") +5); 
+            $explode                 = explode("</script>", $after);
+            $jsondata                = str_replace(");","",$explode[0]);
+            $obj                     = json_decode($jsondata, true);
 
                 foreach ($obj['videos']['playlists'] as $key => $value) {
                     $videoID = $value['id'];
@@ -176,13 +190,25 @@ $obj        = json_decode($jsondata, true);
                 $pixelVideo     = $videometa[0];
                 $mimeVideo      = $videometa[1];
                 $urlVideo       = $videometa[2];
-                
 
-$url = $urlVideo ;
-$parse_url = parse_url($url) ;
-$path_info = pathinfo($parse_url['path']) ;
-$file_extension = $path_info['extension'] ;
-$save_path = 'video/' ;
-$file_name = 'name' . "." . $file_extension ;
-file_put_contents($save_path . $file_name , fopen($url, 'r'));
+                // echo $urlVideo ;
+                 download_content($urlVideo,"video",$titleVideo);
+                 download_content($posterVideo,"poster",$titleVideo);
+
+
+              
+
+       
+
+
+
+
+} else {
+
+    echo '<center><h1>Hello Words</h1></center>';
+ 
+
+
+echo utf8_decode("Fast &#x26; Furious");
+}
 
