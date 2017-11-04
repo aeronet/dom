@@ -130,6 +130,8 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
 
     function download_content($url,$save_path,$file_name) {
 
+
+
         $parse_url      = parse_url($url) ;
         $path_info      = pathinfo($parse_url['path']) ;
         $file_extension = $path_info['extension'] ;
@@ -142,11 +144,10 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
 
     function upload_streamable($file,$file_name,$email,$password) {
 
-    
 
         if (file_exists($file)) {
 
-            echo "The file $file exists <br>";
+           // echo "The file $file exists <br>";
 
                 // Connecting to website.
                 $ch = curl_init();
@@ -181,13 +182,57 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
 
                 // {"status": 1, "shortcode": "jrpri"}
 
-                foreach ($server_output as $key => $value) {
-                    echo '<a href="https://streamable/$value">'.$file_name.'</a>';
+                foreach (json_decode($server_output, true) as $key => $value) {
+                    echo '<a href="https://streamable/'.$value.'">'.$file_name.'</a><br/>';
                 }
         } else {
             echo "The file $file does not exist <br>";
         }
 
+
+    }
+
+
+    function upload_dailymotion($pathfile,$titleVideo,$tags,$channel,$email,$password,$apiKey,$apiSecret) {
+
+
+        require_once 'sdk/Dailymotion.php';
+
+        // Scopes you need to run your tests
+        $scopes = array(
+            'userinfo',
+            'feed',
+            'manage_videos',
+        );
+        // Dailymotion object instanciation
+        $api = new Dailymotion();
+        $api->setGrantType(
+            Dailymotion::GRANT_TYPE_PASSWORD,
+            $apiKey,
+            $apiSecret,
+            $scopes,
+            array(
+                'username' => $email,
+                'password' => $password,
+            )
+        );
+
+
+        $url = $api->uploadFile($pathfile);
+
+        $result = $api->post(
+            '/videos',
+            array(
+                'url'       => $url,
+                'title'     => $titleVideo,
+                'tags'      => $tags,
+                'channel'   => $channel,
+                'published' => true,
+            )
+        );
+        var_dump($result);
+
+        print_r($url);
 
     }
 

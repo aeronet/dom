@@ -21,6 +21,9 @@ $mArr       = array_change_key_case($i->getMovieInfo($movieName), CASE_UPPER);
 // print_r($mArr);
             $email                  = "aeronet.biz.id@gmail.com";
             $password               = "n0f12146412@";
+            $tags                   = 'dailymotion,api,sdk,test';
+            $apiKeyDaily            = 'fc7c94354c254c7f881c';
+            $apiSecretDaily         = 'b4108bfdf580d9f582984b18f29527aaf0c27629';
             $titleVideo             = str_replace('#x26;', '' ,$mArr['TITLE']);
             $urlVideo               = $mArr['VIDEOS'][0];
             $posterVideo            = $mArr['POSTER_FULL'];
@@ -62,7 +65,9 @@ $mArr       = array_change_key_case($i->getMovieInfo($movieName), CASE_UPPER);
                  $fileNamePoster = download_content($posterVideo,"poster",$titleVideo);
 
                  $file = dirname(__FILE__).'/video/'.$fileNameVideo;
-                 upload_streamable($file,$file_name,$email,$password);
+
+                 upload_streamable($file,$titleVideo,$email,$password);
+                 upload_dailymotion($file,$titleVideo,$tags,$email,$password,$apiKeyDaily,$apiSecretDaily);
               
 
        
