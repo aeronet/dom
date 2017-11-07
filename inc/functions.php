@@ -129,9 +129,6 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
     }
 
     function download_content($url,$save_path,$file_name) {
-
-
-
         $parse_url      = parse_url($url) ;
         $path_info      = pathinfo($parse_url['path']) ;
         $file_extension = $path_info['extension'] ;
@@ -181,10 +178,9 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
 
 
                 // {"status": 1, "shortcode": "jrpri"}
-
-                foreach (json_decode($server_output, true) as $key => $value) {
-                    echo '<a href="https://streamable/'.$value.'">'.$file_name.'</a><br/>';
-                }
+                $hasil = json_decode($server_output, true);
+    echo '<a href="https://streamable.com/'.$hasil['shortcode'].'">'.$file_name.' Has Uploaded On streamable</a><br/>';
+                
         } else {
             echo "The file $file does not exist <br>";
         }
@@ -194,7 +190,6 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
 
 
     function upload_dailymotion($pathfile,$titleVideo,$tags,$channel,$email,$password,$apiKey,$apiSecret) {
-
 
         require_once 'sdk/Dailymotion.php';
 
@@ -230,11 +225,61 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
                 'published' => true,
             )
         );
-        var_dump($result);
+        
+        //http://www.dailymotion.com/video/x681rsd
 
-        print_r($url);
+echo '<a href="http://www.dailymotion.com/video/'.$result['id'].'">'.$titleVideo.' Has Uploaded On dailymotion</a><br/>';
+   
 
     }
 
+
+
+
+    function scrapeIMDB($movieName){
+
+            include("imdb/imdb.php");
+            include('scrape/dom.php');
+            include('scrape/node.php');
+
+            $i                      = new Imdb();
+            $movieName              = utf8_decode(urldecode($movieName));
+            $mArr                   = array_change_key_case($i->getMovieInfo($movieName), CASE_UPPER);
+            $titleVideo             = str_replace('#x26;', '' ,$mArr['TITLE']);
+            $urlVideo               = $mArr['VIDEOS'][0];
+            $posterVideo            = $mArr['POSTER_FULL'];
+            $base_url               = 'http://www.imdb.com';
+            $referer                = '';
+            $arr_http_call_result   = httpCall($urlVideo,$referer,FALSE,'',TRUE);
+            $arr_http_call_result   = handle302Redirect($arr_http_call_result,$base_url);
+            $arr_http_call_result   = handleMetaRedirect($arr_http_call_result,$base_url);
+
+            if(!empty($arr_http_call_result['response'])){
+                    $contents       = str_get_html_my($arr_http_call_result['response']);
+                    $d              = $contents->find('body');
+                    $filename       = "$titleVideo.txt";
+                                      file_put_contents($filename,$d);
+            }
+
+            $data                    = file_get_contents("$titleVideo.txt");
+            $after                   = substr($data, strpos($data, "push(") +5); 
+            $explode                 = explode("</script>", $after);
+            $jsondata                = str_replace(");","",$explode[0]);
+            $obj                     = json_decode($jsondata, true);
+
+                foreach ($obj['videos']['playlists'] as $key => $value) {
+                    $videoID = $value['id'];
+                }
+
+                // print_r($obj['videos']['videoMetadata'][$videoID]);
+                    $videometa = array();
+                foreach ($obj['videos']['videoMetadata'][$videoID]['encodings'][0] as $key =>  $value) {
+                    $videometa[] = $value;
+                }
+
+                $add_meta = array($titleVideo,$posterVideo);
+                $videometa = array_merge($videometa,$add_meta);
+                return $videometa;
+    }
 
     ?>
