@@ -11,6 +11,7 @@ include('inc/functions.php');
                 $apiKeyDaily            = "fc7c94354c254c7f881c";
                 $apiSecretDaily         = "b4108bfdf580d9f582984b18f29527aaf0c27629";
                 $channel                = "videogames";
+                $description            = "This My Best Video Ever On This Year";
 
 
 
@@ -27,6 +28,7 @@ if(isset($_GET['movie']) and !empty($_GET['movie'])) {
                 $file               = dirname(__FILE__).'/video/'.$fileNameVideo;
                 upload_streamable($file,$titleVideo,$email,$password);
                 upload_dailymotion($file,$titleVideo,$tags,$channel,$email,$password,$apiKeyDaily,$apiSecretDaily);
+                upload_vimeo($file,$titleVideo,$description);
               
 } else {
 

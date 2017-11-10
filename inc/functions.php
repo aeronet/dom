@@ -179,7 +179,7 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
 
                 // {"status": 1, "shortcode": "jrpri"}
                 $hasil = json_decode($server_output, true);
-    echo '<a href="https://streamable.com/'.$hasil['shortcode'].'">'.$file_name.' Has Uploaded On streamable</a><br/>';
+    echo '<strong>'.$file_name.'</strong> Has Uploaded On <a href="https://streamable.com/'.$hasil['shortcode'].'">Streamable</a><br/>';
                 
         } else {
             echo "The file $file does not exist <br>";
@@ -228,7 +228,7 @@ function handle302Redirect($arr_http_call_result=array(),$base_url=''){
         
         //http://www.dailymotion.com/video/x681rsd
 
-echo '<a href="http://www.dailymotion.com/video/'.$result['id'].'">'.$titleVideo.' Has Uploaded On dailymotion</a><br/>';
+echo '<strong>'.$titleVideo.'</strong> Has Uploaded On <a href="http://www.dailymotion.com/video/'.$result['id'].'"> Dailymotion</a><br/>';
    
 
     }
@@ -281,5 +281,97 @@ echo '<a href="http://www.dailymotion.com/video/'.$result['id'].'">'.$titleVideo
                 $videometa = array_merge($videometa,$add_meta);
                 return $videometa;
     }
+
+
+
+
+    function upload_vimeo($file,$title,$description) {
+
+
+ini_set('max_execution_time', 20*60);
+set_time_limit(20*60);
+
+require_once('vimeo/vimeo.php');
+
+if (!function_exists('json_decode')) {
+    throw new Exception('We could not find json_decode. json_decode is found in php 5.2 and up, but not found on many linux systems due to licensing conflicts. If you are running ubuntu try "sudo apt-get install php5-json".');
+}
+
+$config = json_decode(file_get_contents('vimeo/config.json'), true);
+
+
+
+if (empty($config['access_token'])) {
+    throw new Exception('You can not upload a file without an access token. You can find this token on your app page, or generate one using auth.php');
+}
+
+//$lib = new Vimeography_Vimeo($config['client_id'], $config['client_secret'], $config['access_token']);
+$lib = new Vimeography_Vimeo($config['client_id'], $config['client_secret'], $config['access_token']);
+
+//  Get the args from the command line to see what files to upload.
+$files = array($file);
+//array_shift($files);
+
+//   Keep track of what we have uploaded.
+$uploaded = array();
+//echo '<pre>';
+//  Send the files to the upload script.
+foreach ($files as $file_name) {
+    //  Update progress.
+    //print 'Uploading ' . $file_name . "\n";
+    //echo '<br>';
+    try {
+        //  Send this to the API library.
+        $uri = $lib->upload($file_name);
+ 
+        //  Now that we know where it is in the API, let's get the info about it so we can find the link.
+        $metadata = array(
+    'name' => $title,
+    'description' => $description,
+);
+
+        $video_data = $lib->request($uri,$metadata, 'PATCH');
+
+ 
+
+        //  Pull the link out of successful data responses.
+        $link = '';
+        if($video_data['status'] == 204) {
+            $link =  str_replace('/videos/', '',$video_data['headers']['Location']);
+            // foreach ($header as $key => $value) {
+            //     = $value;
+            // }
+
+
+
+        }
+
+        //  Store this in our array of complete videos.
+        $uploaded[] = array('file' => $file_name, 'api_video_uri' => $uri, 'link' => $link);
+    }
+    catch (VimeoUploadException $e) {
+        //  We may have had an error.  We can't resolve it here necessarily, so report it to the user.
+        //print 'Error uploading ' . $file_name . "\n";
+        //echo '<br>';
+        //print 'Server reported: ' . $e->getMessage() . "\n";
+    }
+}
+
+//  Provide a summary on completion with links to the videos on the site.
+//print 'Uploaded ' . count($uploaded) . " files.\n\n";
+foreach ($uploaded as $site_video) {
+    extract($site_video);
+    //print "$file is at https://vimeo.com/$link.\n <br>";
+
+    echo '<strong>'.$title.'</strong> Has Uploaded On <a href="https://vimeo.com/'.$link.'">Vimeo</a><br/>';
+   
+}
+
+
+    }
+
+
+
+
 
     ?>
